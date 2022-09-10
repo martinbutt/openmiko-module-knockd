@@ -1,0 +1,44 @@
+#!/bin/sh
+#
+# Start & stop knockd
+#
+
+CONFIG=/etc/knockd.conf
+
+# check if CONFIG exists, print message & exit if it doesn't
+[ ! -f $CONFIG ] && ( echo "The config file "$CONFIG" is missing...exiting now." && exit 2 )
+
+# Allow a few customizations from a config file. Especially knockd
+# must be explicitly enabled by adding ENABLED="yes" in this file.
+test -r /etc/default/knockd && . /etc/default/knockd
+
+case "$1" in
+	start)
+		printf "Starting knockd: "
+		if test "${START_KNOCKD}" != "1" ; then
+		    echo "SKIPPED"
+		    exit 0
+		fi
+		start-stop-daemon -b -q -S -p /var/run/knockd.pid -x /usr/bin/knockd -- -d -i wlan0
+		[ $? = 0 ] && echo "OK" || echo "FAIL"
+		;;
+	stop)
+		printf "Stopping knockd: "
+		if test "${START_KNOCKD}" != "1" ; then
+		    echo "SKIPPED"
+		    exit 0
+		fi
+		start-stop-daemon -q -K -p /var/run/knockd.pid -x /usr/bin/knockd
+		[ $? = 0 ] && echo "OK" || echo "FAIL"
+		rm -f /var/run/knockd.pid
+		;;
+	restart)
+		"$0" stop
+		"$0" start
+		;;
+		*)
+		echo "Usage: $0 {start|stop|restart}"
+		exit 1
+esac
+
+exit $?
